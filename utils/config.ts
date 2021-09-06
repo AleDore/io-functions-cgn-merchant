@@ -7,7 +7,9 @@
 
 import { readableReport } from "@pagopa/ts-commons/lib/reporters";
 import { NonEmptyString } from "@pagopa/ts-commons/lib/strings";
-import { fromNullable } from "fp-ts/lib/Option";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 import * as t from "io-ts";
 
 export const RedisParams = t.intersection([
@@ -37,12 +39,18 @@ export const IConfig = t.intersection([
 // No need to re-evaluate this object for each call
 const errorOrConfig: t.Validation<IConfig> = IConfig.decode({
   ...process.env,
-  REDIS_CLUSTER_ENABLED: fromNullable(process.env.REDIS_CLUSTER_ENABLED)
-    .map(_ => _.toLowerCase() === "true")
-    .toUndefined(),
-  REDIS_TLS_ENABLED: fromNullable(process.env.REDIS_TLS_ENABLED)
-    .map(_ => _.toLowerCase() === "true")
-    .toUndefined(),
+  REDIS_CLUSTER_ENABLED: pipe(
+    process.env.REDIS_CLUSTER_ENABLED,
+    O.fromNullable,
+    O.map(_ => _.toLowerCase() === "true"),
+    O.toUndefined
+  ),
+  REDIS_TLS_ENABLED: pipe(
+    process.env.REDIS_TLS_ENABLED,
+    O.fromNullable,
+    O.map(_ => _.toLowerCase() === "true"),
+    O.toUndefined
+  ),
   isProduction: process.env.NODE_ENV === "production"
 });
 
@@ -64,7 +72,10 @@ export function getConfig(): t.Validation<IConfig> {
  * @throws validation errors found while parsing the application configuration
  */
 export function getConfigOrThrow(): IConfig {
-  return errorOrConfig.getOrElseL(errors => {
-    throw new Error(`Invalid configuration: ${readableReport(errors)}`);
-  });
+  return pipe(
+    errorOrConfig,
+    E.getOrElseW(errors => {
+      throw new Error(`Invalid configuration: ${readableReport(errors)}`);
+    })
+  );
 }

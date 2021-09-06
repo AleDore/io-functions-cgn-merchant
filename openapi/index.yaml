@@ -62,13 +62,13 @@ securityDefinitions:
 
 definitions:
   Timestamp:
-    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v17.3.0/openapi/definitions.yaml#/Timestamp"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v21.2.0/openapi/definitions.yaml#/Timestamp"
   ProblemJson:
-    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v17.3.0/openapi/definitions.yaml#/ProblemJson"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-commons/v21.2.0/openapi/definitions.yaml#/ProblemJson"
   OtpCode:
-    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-cgn/v0.2.1/openapi/index.yaml#/definitions/OtpCode"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-cgn/IP_383_upgrade_to_fp_ts_2/openapi/index.yaml#/definitions/OtpCode"
   Otp:
-    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-cgn/v0.2.1/openapi/index.yaml#/definitions/Otp"
+    $ref: "https://raw.githubusercontent.com/pagopa/io-functions-cgn/IP_383_upgrade_to_fp_ts_2/openapi/index.yaml#/definitions/Otp"
   
   OtpValidationResponse:
     type: object

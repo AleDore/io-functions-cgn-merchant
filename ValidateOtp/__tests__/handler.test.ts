@@ -3,8 +3,8 @@
 import { NonNegativeInteger } from "@pagopa/ts-commons/lib/numbers";
 import { FiscalCode } from "@pagopa/ts-commons/lib/strings";
 import * as date_fns from "date-fns";
-import { none, some } from "fp-ts/lib/Option";
-import { fromLeft, taskEither } from "fp-ts/lib/TaskEither";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 import { context } from "../../__mocks__/durable-functions";
 import { Otp } from "../../generated/definitions/Otp";
 import { OtpCode } from "../../generated/definitions/OtpCode";
@@ -43,10 +43,10 @@ const anOtpPayload: CommonOtpPayload = {
 
 const getTaskMock = jest
   .fn()
-  .mockImplementation(() => taskEither.of(some(JSON.stringify(anOtpPayload))));
+  .mockImplementation(() => TE.of(O.some(JSON.stringify(anOtpPayload))));
 jest.spyOn(redis_storage, "getTask").mockImplementation(getTaskMock);
 
-const deleteTaskMock = jest.fn().mockImplementation(() => taskEither.of(true));
+const deleteTaskMock = jest.fn().mockImplementation(() => TE.of(true));
 jest.spyOn(redis_storage, "deleteTask").mockImplementation(deleteTaskMock);
 
 describe("ValidateOtpHandler", () => {
@@ -56,14 +56,14 @@ describe("ValidateOtpHandler", () => {
 
   it("should return an internal error if Redis retrieve fails", async () => {
     getTaskMock.mockImplementationOnce(() =>
-      fromLeft(new Error("Cannot read from Redis"))
+      TE.left(new Error("Cannot read from Redis"))
     );
     const handler = ValidateOtpHandler({} as any);
     const response = await handler(context, aValidationPayload);
     expect(response.kind).toBe("IResponseErrorInternal");
   });
   it("should return an internal error if Otp payload cannot be parsed", async () => {
-    getTaskMock.mockImplementationOnce(() => taskEither.of(some("")));
+    getTaskMock.mockImplementationOnce(() => TE.of(O.some("")));
     const handler = ValidateOtpHandler({} as any);
     const response = await handler(context, aValidationPayload);
     expect(response.kind).toBe("IResponseErrorInternal");
@@ -71,7 +71,7 @@ describe("ValidateOtpHandler", () => {
 
   it("should return an internal error if Redis delete fails", async () => {
     deleteTaskMock.mockImplementationOnce(() =>
-      fromLeft("Cannot delete from Redis")
+      TE.left("Cannot delete from Redis")
     );
     const handler = ValidateOtpHandler({} as any);
     const response = await handler(context, aValidationPayloadWithInvalidation);
@@ -80,7 +80,7 @@ describe("ValidateOtpHandler", () => {
   });
 
   it("should return an internal error if OTP delete fails", async () => {
-    deleteTaskMock.mockImplementationOnce(() => taskEither.of(false));
+    deleteTaskMock.mockImplementationOnce(() => TE.of(false));
     const handler = ValidateOtpHandler({} as any);
     const response = await handler(context, aValidationPayloadWithInvalidation);
     expect(deleteTaskMock).toBeCalledTimes(1);
@@ -88,8 +88,8 @@ describe("ValidateOtpHandler", () => {
   });
 
   it("should return an internal error if fiscalCode-OTP delete fails", async () => {
-    deleteTaskMock.mockImplementationOnce(() => taskEither.of(true));
-    deleteTaskMock.mockImplementationOnce(() => taskEither.of(false));
+    deleteTaskMock.mockImplementationOnce(() => TE.of(true));
+    deleteTaskMock.mockImplementationOnce(() => TE.of(false));
     const handler = ValidateOtpHandler({} as any);
     const response = await handler(context, aValidationPayloadWithInvalidation);
     expect(deleteTaskMock).toBeCalledTimes(2);
@@ -97,7 +97,7 @@ describe("ValidateOtpHandler", () => {
   });
 
   it("should return Not found if Otp code doesn't match on Redis", async () => {
-    getTaskMock.mockImplementationOnce(() => taskEither.of(none));
+    getTaskMock.mockImplementationOnce(() => TE.of(O.none));
     const handler = ValidateOtpHandler({} as any);
     const response = await handler(context, aValidationPayload);
     expect(response.kind).toBe("IResponseErrorNotFound");

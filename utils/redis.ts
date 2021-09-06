@@ -1,4 +1,5 @@
-import { fromPredicate } from "fp-ts/lib/Option";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
 import * as redis from "redis";
 import RedisClustr = require("redis-clustr");
 import { getConfigOrThrow } from "./config";
@@ -45,21 +46,24 @@ function createClusterRedisClient(
   }) as redis.RedisClient; // Casting RedisClustr with missing typings to RedisClient (same usage).
 }
 
-export const REDIS_CLIENT = fromPredicate<boolean>(_ => _)(config.isProduction)
-  .mapNullable(_ => config.REDIS_CLUSTER_ENABLED)
-  .chain(fromPredicate(_ => _))
-  .map(() =>
+export const REDIS_CLIENT = pipe(
+  config.isProduction,
+  O.fromPredicate<boolean>(_ => _),
+  O.chainNullableK(_ => config.REDIS_CLUSTER_ENABLED),
+  O.chain(O.fromPredicate(_ => _)),
+  O.map(() =>
     createClusterRedisClient(
       config.REDIS_URL,
       config.REDIS_PASSWORD,
       config.REDIS_PORT
     )
-  )
-  .getOrElseL(() =>
+  ),
+  O.getOrElse(() =>
     createSimpleRedisClient(
       config.REDIS_URL,
       config.REDIS_PASSWORD,
       config.REDIS_PORT,
       config.REDIS_TLS_ENABLED
     )
-  );
+  )
+);

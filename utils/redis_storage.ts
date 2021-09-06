@@ -1,6 +1,7 @@
-import { Either, isLeft, left, right, toError } from "fp-ts/lib/Either";
-import { fromNullable, Option } from "fp-ts/lib/Option";
-import { fromEither, TaskEither, tryCatch } from "fp-ts/lib/TaskEither";
+import * as E from "fp-ts/lib/Either";
+import { pipe } from "fp-ts/lib/function";
+import * as O from "fp-ts/lib/Option";
+import * as TE from "fp-ts/lib/TaskEither";
 import { RedisClient } from "redis";
 
 /**
@@ -11,12 +12,12 @@ import { RedisClient } from "redis";
 export const singleStringReply = (
   err: Error | null,
   reply: "OK" | undefined
-): Either<Error, boolean> => {
+): E.Either<Error, boolean> => {
   if (err) {
-    return left<Error, boolean>(err);
+    return E.left(err);
   }
 
-  return right<Error, boolean>(reply === "OK");
+  return E.right(reply === "OK");
 };
 
 /**
@@ -27,11 +28,11 @@ export const singleStringReply = (
 export const singleValueReply = (
   err: Error | null,
   reply: string | null
-): Either<Error, Option<string>> => {
+): E.Either<Error, O.Option<string>> => {
   if (err) {
-    return left<Error, Option<string>>(err);
+    return E.left(err);
   }
-  return right<Error, Option<string>>(fromNullable(reply));
+  return E.right(O.fromNullable(reply));
 };
 
 /**
@@ -43,54 +44,60 @@ export const integerRepl = (
   err: Error | null,
   reply: unknown,
   expectedReply?: number
-): Either<Error, boolean> => {
+): E.Either<Error, boolean> => {
   if (err) {
-    return left<Error, boolean>(err);
+    return E.left(err);
   }
   if (expectedReply !== undefined && expectedReply !== reply) {
-    return right<Error, boolean>(false);
+    return E.right(false);
   }
-  return right<Error, boolean>(typeof reply === "number");
+  return E.right(typeof reply === "number");
 };
 
 export const falsyResponseToError = (
-  response: Either<Error, boolean>,
+  response: E.Either<Error, boolean>,
   error: Error
-): Either<Error, true> => {
-  if (isLeft(response)) {
-    return left(response.value);
+): E.Either<Error, true> => {
+  if (E.isLeft(response)) {
+    return E.left(response.left);
   } else {
-    if (response.value) {
-      return right(true);
+    if (response.right) {
+      return E.right(true);
     }
-    return left(error);
+    return E.left(error);
   }
 };
 
 export const getTask = (
   redisClient: RedisClient,
   key: string
-): TaskEither<Error, Option<string>> =>
-  tryCatch(
-    () =>
-      new Promise<Either<Error, Option<string>>>(resolve =>
-        redisClient.get(key, (err, response) =>
-          resolve(singleValueReply(err, response))
-        )
-      ),
-    toError
-  ).chain(fromEither);
+): TE.TaskEither<Error, O.Option<string>> =>
+  pipe(
+    TE.tryCatch(
+      () =>
+        new Promise<E.Either<Error, O.Option<string>>>(resolve =>
+          redisClient.get(key, (err, response) =>
+            resolve(singleValueReply(err, response))
+          )
+        ),
+      E.toError
+    ),
+    TE.chain(TE.fromEither)
+  );
 
 export const deleteTask = (
   redisClient: RedisClient,
   key: string
-): TaskEither<Error, boolean> =>
-  tryCatch(
-    () =>
-      new Promise<Either<Error, boolean>>(resolve =>
-        redisClient.del(key, (err, response) =>
-          resolve(integerRepl(err, response, 1))
-        )
-      ),
-    toError
-  ).chain(fromEither);
+): TE.TaskEither<Error, boolean> =>
+  pipe(
+    TE.tryCatch(
+      () =>
+        new Promise<E.Either<Error, boolean>>(resolve =>
+          redisClient.del(key, (err, response) =>
+            resolve(integerRepl(err, response, 1))
+          )
+        ),
+      E.toError
+    ),
+    TE.chain(TE.fromEither)
+  );
