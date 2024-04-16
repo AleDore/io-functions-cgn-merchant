@@ -38,7 +38,7 @@ services:
       - "traefik.http.routers.functions.middlewares=testHeader"
 
   traefik:
-    image: traefik:v2.0
+    image: traefik:v2.0@sha256:df0671f3cd101dad36b444e0fc586bedc05604ecda10f33b5d1f3487816d8c9f
     command: |-
       --entrypoints.web.address=:80
       --providers.docker=true
@@ -55,7 +55,7 @@ services:
 
   redis:
     container_name: redis-cgn
-    image: wodby/redis:3.2-2.1.5
+    image: wodby/redis:3.2-2.1.5@sha256:09a82ade1f06069201c4d055e7ed759702880e34653222ae677375019e6ebd41
     ports:
       - "6379:6379"
     environment:
