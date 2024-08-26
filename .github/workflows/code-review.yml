@@ -8,9 +8,6 @@ on:
       - "*"
       - "!infra/*"
       - "!.github/*"
-  push:
-    branches:
-      - EC-404-devops-decommissioning
 
 jobs:
   js_code_review:
@@ -50,7 +47,7 @@ jobs:
 
       - name: Lint API
         run: yarn lint-api
-        
+
       - name: Generate definitions
         run: yarn generate
 
